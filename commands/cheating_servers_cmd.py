@@ -569,12 +569,13 @@ async def _send_restored_message_history_picker(interaction: discord.Interaction
         )
         return
 
+    await interaction.response.defer(ephemeral=True)
     picker = MessageServerPickerView(
         owner_id=owner_id,
         target_id=target_id,
         hits=hits,
     )
-    await interaction.respond(
+    await interaction.followup.send(
         picker.content,
         view=picker,
         ephemeral=True,
@@ -962,12 +963,13 @@ class CheatingServersView(discord.ui.View):
             )
             return
 
+        await interaction.response.defer(ephemeral=True)
         picker = MessageServerPickerView(
             owner_id=self.owner_id,
             target_id=self.target_id,
             hits=hits,
         )
-        await interaction.respond(
+        await interaction.followup.send(
             picker.content,
             view=picker,
             ephemeral=True,

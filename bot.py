@@ -6,6 +6,10 @@ import os
 import sys
 import asyncio
 import time
+import signal
+import tempfile
+import contextlib
+from pathlib import Path
 
 import discord
 from dotenv import load_dotenv
@@ -41,6 +45,8 @@ _COGS_LOADED = False
 _PREFIX_COMMAND_DEDUPE_SECONDS = 300.0
 _RECENT_PREFIX_COMMAND_IDS: dict[int, float] = {}
 _RECENT_APPLICATION_COMMAND_IDS: dict[int, float] = {}
+_INSTANCE_LOCK_HANDLE = None
+_SHUTTING_DOWN = False
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -70,6 +76,59 @@ def print_error(message):
 
 def print_loaded(message):
     print(f"  {CYAN}[LOADED]{RESET}  {message}")
+
+
+def _lock_path() -> Path:
+    if os.name == "nt":
+        return Path(tempfile.gettempdir()) / "logs-bot-instance.lock"
+    return Path("/data/logs-bot-instance.lock")
+
+
+def acquire_instance_lock(timeout: float = 30.0) -> bool:
+    """Prevent overlapping Railway containers from running the same bot token."""
+    global _INSTANCE_LOCK_HANDLE
+    path = _lock_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    handle = open(path, "a+")
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            handle.seek(0)
+            handle.truncate()
+            handle.write(f"{os.getpid()}\n")
+            handle.flush()
+            _INSTANCE_LOCK_HANDLE = handle
+            return True
+        except OSError:
+            if time.monotonic() >= deadline:
+                handle.close()
+                return False
+            time.sleep(0.5)
+
+
+async def shutdown_bot(reason: str):
+    global _SHUTTING_DOWN, _MONITOR_TASK
+    if _SHUTTING_DOWN:
+        return
+    _SHUTTING_DOWN = True
+    print_info(f"Shutting down: {reason}")
+    if _MONITOR_TASK is not None and not _MONITOR_TASK.done():
+        _MONITOR_TASK.cancel()
+        with contextlib.suppress(BaseException):
+            await asyncio.wait_for(_MONITOR_TASK, timeout=5)
+    await bot.close()
 
 COGS = [
     "commands.help_cmd",
@@ -183,8 +242,12 @@ async def on_ready():
         print_loaded("channel monitor task queued")
 
 
-def main():
+async def main_async():
     print_banner()
+    if not acquire_instance_lock():
+        print_error("Another Logs Bot instance is still running; exiting to avoid duplicate Discord events.")
+        raise SystemExit(75)
+
     try:
         init_tracking_db()
         print_loaded("tracking DB ready")
@@ -193,7 +256,31 @@ def main():
 
     print()
     print_info("Connecting to Discord...")
-    bot.run(BOT_TOKEN)
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(
+                sig,
+                lambda sig=sig: asyncio.create_task(shutdown_bot(sig.name)),
+            )
+        except (NotImplementedError, RuntimeError):
+            try:
+                signal.signal(
+                    sig,
+                    lambda _signum, _frame, sig=sig: asyncio.create_task(shutdown_bot(sig.name)),
+                )
+            except Exception:
+                pass
+
+    try:
+        async with bot:
+            await bot.start(BOT_TOKEN)
+    finally:
+        await shutdown_bot("main exit")
+
+
+def main():
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":
