@@ -24,6 +24,8 @@ from datetime import datetime, timezone
 from typing import Optional
 from time import time
 
+from core.logging import E
+
 import aiohttp
 
 
@@ -195,7 +197,12 @@ async def _forward_message(
     channel_label: str,
     webhook_url: str,
 ):
-    """Download attachments and forward a captured message to the webhook."""
+    """Download attachments and forward a captured message to the webhook.
+
+    UI changes only: remove top title/footer, don't display raw IDs or
+    the Message ID field, rename Author → User and use emoji constants.
+    The forwarding logic (attachments, uploads) is unchanged.
+    """
     author = msg_data.get("author", {})
     content = msg_data.get("content", "")
     attachments = msg_data.get("attachments", [])
@@ -229,36 +236,29 @@ async def _forward_message(
     author_global = author.get("global_name") or author_name
     author_id = author.get("id", "?")
     avatar_hash = author.get("avatar", "")
-    if avatar_hash:
+    if avatar_hash and author_id and isinstance(author_id, str):
         avatar_url = f"https://cdn.discordapp.com/avatars/{author_id}/{avatar_hash}.png"
     else:
-        idx = (int(author_id) >> 22) % 6 if author_id.isdigit() else 0
+        idx = (int(author_id) >> 22) % 6 if isinstance(author_id, str) and author_id.isdigit() else 0
         avatar_url = f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
 
-    # ── Build embed ──────────────────────────────────────────────
+    # ── Build embed (UI-only): no title/footer, Author -> User, no raw IDs
     embed: dict = {
-        "title": f"📨 Message Captured — {channel_label}",
-        "color": 0xFF6B6B,
+        "color": 0x2F3136,
         "fields": [
             {
-                "name": "👤 Author",
-                "value": f"`{author_global}` (`{author_name}`)\nID: `{author_id}`",
+                "name": f"{E.get('mag', '🔎')} User",
+                "value": (f"<@{author_id}>" if (author_id and str(author_id).isdigit()) else author_global),
                 "inline": True,
             },
             {
-                "name": "💬 Channel",
-                "value": f"`{channel_label}`",
-                "inline": True,
-            },
-            {
-                "name": "🆔 Message ID",
-                "value": f"`{message_id}`",
+                "name": f"{E.get('clipboard', '📋')} Channel",
+                "value": f"{channel_label}",
                 "inline": True,
             },
         ],
         "timestamp": timestamp,
         "thumbnail": {"url": avatar_url},
-        "footer": {"text": "Channel Monitor • Hacker Report Capture"},
     }
 
     # Content field
