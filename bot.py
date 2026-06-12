@@ -5,6 +5,7 @@
 import os
 import sys
 import asyncio
+import time
 
 import discord
 from dotenv import load_dotenv
@@ -37,6 +38,9 @@ bot = commands.Bot(command_prefix=["!", "?"], intents=intents)
 _SUPPRESS_GUILD_REMOVE_LOGS = True
 _MONITOR_TASK = None
 _COGS_LOADED = False
+_PREFIX_COMMAND_DEDUPE_SECONDS = 300.0
+_RECENT_PREFIX_COMMAND_IDS: dict[int, float] = {}
+_RECENT_APPLICATION_COMMAND_IDS: dict[int, float] = {}
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -105,6 +109,26 @@ async def on_guild_remove(guild: discord.Guild):
         print_error(f"Failed to log guild uninstall: {e}")
 
 async def disabled_command_check(ctx: discord.ApplicationContext) -> bool:
+    now = time.monotonic()
+    if isinstance(ctx, commands.Context):
+        message_id = getattr(getattr(ctx, "message", None), "id", None)
+        if message_id is not None:
+            for mid, seen_at in list(_RECENT_PREFIX_COMMAND_IDS.items()):
+                if now - seen_at > _PREFIX_COMMAND_DEDUPE_SECONDS:
+                    _RECENT_PREFIX_COMMAND_IDS.pop(mid, None)
+            if message_id in _RECENT_PREFIX_COMMAND_IDS:
+                return False
+            _RECENT_PREFIX_COMMAND_IDS[message_id] = now
+    else:
+        interaction_id = getattr(getattr(ctx, "interaction", None), "id", None)
+        if interaction_id is not None:
+            for iid, seen_at in list(_RECENT_APPLICATION_COMMAND_IDS.items()):
+                if now - seen_at > _PREFIX_COMMAND_DEDUPE_SECONDS:
+                    _RECENT_APPLICATION_COMMAND_IDS.pop(iid, None)
+            if interaction_id in _RECENT_APPLICATION_COMMAND_IDS:
+                return False
+            _RECENT_APPLICATION_COMMAND_IDS[interaction_id] = now
+
     command_name = ctx.command.name if ctx.command else ""
     if not command_name or not is_command_disabled(command_name):
         return True

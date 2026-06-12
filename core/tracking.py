@@ -465,6 +465,24 @@ def get_former_cheating_server_hits(discord_id: str | int) -> list[dict[str, Any
     return [dict(row) for row in rows]
 
 
+def get_cheating_server_evidence_hits(discord_id: str | int) -> list[dict[str, Any]]:
+    """Return persisted watched-server rows that can be used for message evidence lookup."""
+    discord_id = str(discord_id)
+    with _connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT guild_id, guild_name, first_seen, last_seen, last_checked,
+                   last_joined_at, left_at, source, confidence, currently_in
+            FROM cheating_server_memberships
+            WHERE discord_id = ?
+              AND confidence IN ('exact_current', 'exact_historical', 'inferred_messages')
+            ORDER BY currently_in DESC, COALESCE(last_seen, first_seen) DESC
+            """,
+            (discord_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def mark_user_app_first_use_logged(
     discord_id: str | int,
     *,

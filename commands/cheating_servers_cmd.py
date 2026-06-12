@@ -18,6 +18,7 @@ import asyncio
 import hashlib
 import math
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -35,6 +36,7 @@ from core.logging import (
 )
 from core.tracking import track_command, track_discord_user
 from core.tracking import (
+    get_cheating_server_evidence_hits,
     get_former_cheating_server_hits,
     is_cheating_server_user_whitelisted,
     track_cheating_server_scan,
@@ -474,6 +476,109 @@ def _env_for_guild_id(guild_id: str) -> Optional[str]:
         if index in indices:
             return env_var
     return None
+
+
+def _message_author_id(interaction: discord.Interaction) -> Optional[int]:
+    message = getattr(interaction, "message", None)
+    source_interaction = getattr(message, "interaction", None)
+    user = getattr(source_interaction, "user", None)
+    user_id = getattr(user, "id", None)
+    return int(user_id) if user_id is not None else None
+
+
+def _target_id_from_result_message(interaction: discord.Interaction) -> Optional[str]:
+    message = getattr(interaction, "message", None)
+    embeds = getattr(message, "embeds", None) or []
+    for embed in embeds:
+        text = " ".join(
+            part
+            for part in (
+                getattr(embed, "title", None),
+                getattr(embed, "description", None),
+            )
+            if part
+        )
+        mention = re.search(r"<@!?(\d{15,25})>", text)
+        if mention:
+            return mention.group(1)
+        backticked = re.search(r"`(\d{15,25})`", text)
+        if backticked:
+            return backticked.group(1)
+    return None
+
+
+def _stored_message_evidence_hits(target_id: str) -> list[dict]:
+    hits: list[dict] = []
+    seen_guilds: set[str] = set()
+    for row in get_cheating_server_evidence_hits(target_id):
+        guild_id = str(row.get("guild_id") or "")
+        if not guild_id or guild_id in seen_guilds:
+            continue
+        env_var = _env_for_guild_id(guild_id)
+        if not env_var:
+            continue
+        confidence = (row.get("confidence") or "").lower()
+        if row.get("currently_in"):
+            confidence = "exact_current"
+        if confidence not in {"exact_current", "exact_historical", "inferred_messages"}:
+            continue
+        seen_guilds.add(guild_id)
+        hits.append({
+            "guild_id": guild_id,
+            "guild_name": row.get("guild_name") or "Unknown server",
+            "joined_at": row.get("last_joined_at"),
+            "confidence": confidence,
+            "env_var": env_var,
+        })
+    return hits
+
+
+async def _send_restored_message_history_picker(interaction: discord.Interaction) -> None:
+    original_owner_id = _message_author_id(interaction)
+    if original_owner_id is not None and interaction.user.id != original_owner_id:
+        await interaction.respond(
+            "Only the command runner can use this button.",
+            ephemeral=True,
+        )
+        return
+
+    target_id = _target_id_from_result_message(interaction)
+    if not target_id:
+        await interaction.respond(
+            "I couldn't recover the checked user from this result panel. Run the command again.",
+            ephemeral=True,
+        )
+        return
+
+    owner_id = original_owner_id or interaction.user.id
+    hits = _stored_message_evidence_hits(target_id)
+    if not hits:
+        await interaction.respond(
+            "No stored message evidence is available for this panel anymore.",
+            ephemeral=True,
+        )
+        return
+
+    if len(hits) == 1:
+        await interaction.response.defer(ephemeral=True)
+        await _send_message_history(
+            interaction,
+            owner_id=owner_id,
+            target_id=target_id,
+            hit=hits[0],
+        )
+        return
+
+    picker = MessageServerPickerView(
+        owner_id=owner_id,
+        target_id=target_id,
+        hits=hits,
+    )
+    await interaction.respond(
+        picker.content,
+        view=picker,
+        ephemeral=True,
+    )
 
 
 _MESSAGE_TYPE_LABELS = {
@@ -1167,7 +1272,7 @@ class ExpiredCheatingServersView(discord.ui.View):
 
     @discord.ui.button(label="View Messages", style=discord.ButtonStyle.secondary, custom_id="incheatingservers:messages")
     async def messages_btn(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await self._expired(interaction)
+        await _send_restored_message_history_picker(interaction)
 
 
 # ── Cog ──────────────────────────────────────────────────────────

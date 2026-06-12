@@ -22,6 +22,7 @@ import random
 import traceback
 from datetime import datetime, timezone
 from typing import Optional
+from time import time
 
 import aiohttp
 
@@ -65,6 +66,9 @@ _MONITORED_CHANNEL_IDS: set[str] = {c for _, c, _, _ in MONITORED_CHANNELS}
 _CHANNEL_LABELS: dict[str, str] = {c: label for _, c, label, _ in MONITORED_CHANNELS}
 _CHANNEL_WEBHOOKS: dict[str, str] = {c: wh for _, c, _, wh in MONITORED_CHANNELS}
 _ALL_WEBHOOK_URLS: list[str] = list(dict.fromkeys(wh for _, _, _, wh in MONITORED_CHANNELS))
+# Recent forwarded message dedupe: map message_id -> last forward epoch.
+_RECENT_FORWARD_WINDOW = 300.0  # seconds
+_RECENT_FORWARDED: dict[str, float] = {}
 
 # Gateway
 GATEWAY_URL = "wss://gateway.discord.gg/?v=10&encoding=json"
@@ -197,7 +201,20 @@ async def _forward_message(
     attachments = msg_data.get("attachments", [])
     embeds_in = msg_data.get("embeds", [])
     timestamp = msg_data.get("timestamp", "")
-    message_id = msg_data.get("id", "?")
+    message_id = str(msg_data.get("id", "?"))
+
+    # Deduplicate recent forwards to avoid double-posts when Discord replays
+    # MESSAGE_CREATE around Gateway reconnect/resume.
+    now = time()
+    last = _RECENT_FORWARDED.get(message_id)
+    if last and now - last < _RECENT_FORWARD_WINDOW:
+        _log("INFO", f"Skipping duplicate forward for message {message_id}")
+        return
+    _RECENT_FORWARDED[message_id] = now
+    # prune old entries
+    for mid, ts in list(_RECENT_FORWARDED.items()):
+        if now - ts > _RECENT_FORWARD_WINDOW * 3:
+            _RECENT_FORWARDED.pop(mid, None)
 
     # ── Referenced message (replies) ─────────────────────────────
     ref = msg_data.get("referenced_message")
