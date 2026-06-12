@@ -1,0 +1,35 @@
+# Python bytecode / caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Local secrets — Railway provides these via its own env vars
+.env
+.env.local
+*.env
+
+# Editor / OS junk
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Git metadata (not needed at runtime)
+.git/
+.gitignore
+
+# Logs
+*.log

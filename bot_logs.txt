@@ -1,0 +1,773 @@
+Created At: 2026-05-29T21:00:59Z
+Completed At: 2026-05-29T21:00:59Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 470
+Total Bytes: 16651
+Showing lines 1 to 470
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # ──────────────────────────────────────────────────────────────────
+2: # Personal Roblox Account Management Discord Bot
+3: # This bot provides the account owner with convenient Discord slash
+4: # commands to manage their own Roblox accounts. All operations use
+5: # official, documented Roblox API endpoints and are performed by
+6: # the account owner on their own accounts for personal use only.
+7: # ──────────────────────────────────────────────────────────────────
+8: 
+9: import os
+10: import sys
+11: import asyncio
+12: import ctypes.util
+13: import glob
+14: import time
+15: 
+16: import discord
+17: import discord.voice_state
+18: from discord.ext import commands
+19: from dotenv import load_dotenv
+20: from core.channel_monitor import start_monitor
+21: from core.command_control import is_command_disabled
+22: from core.logging import (
+23:     configure_webhook_emojis,
+24:     log_bot_stats,
+25:     log_guild_install,
+26:     log_guild_uninstall,
+27: )
+28: from core.tracking import init_db as init_tracking_db
+29: 
+30: # Force UTF-8 + unbuffered so emojis + ANSI colors work on Windows
+31: sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+32: sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
+33: 
+34: load_dotenv()
+35: 
+36: BOT_TOKEN = os.getenv("BOT_TOKEN")
+37: if not BOT_TOKEN:
+38:     print(
+39:         
+<truncated 15318 bytes>
+{e}")
+415: 
+416: 
+417: @bot.event
+418: async def on_guild_remove(guild: discord.Guild):
+419:     """Log when the bot is kicked/removed from a server."""
+420:     guild_name = getattr(guild, "name", None)
+421:     if (
+422:         _SUPPRESS_GUILD_REMOVE_LOGS
+423:         or getattr(guild, "unavailable", False)
+424:         or not guild_name
+425:         or guild_name == "?"
+426:     ):
+427:         print_info(f"Skipped guild remove log during disconnect/cache update: {getattr(guild, 'id', '?')}")
+428:         return
+429:     print(f"  {RED}[LEAVE]{RESET}   ➖ {guild.name}")
+430:     try:
+431:         log_guild_uninstall(guild)
+432:     except Exception as e:
+433:         print_error(f"Failed to log guild uninstall: {e}")
+434: 
+435: 
+436: async def main():
+437:     print_banner()
+438: 
+439:     disable_discord_voice_dave()
+440:     load_discord_opus()
+441:     patch_voice_recv_corrupt_opus()
+442: 
+443:     # Initialize the tracking SQLite DB (idempotent, creates schema if missing).
+444:     try:
+445:         init_tracking_db()
+446:         print_loaded("📦 tracking DB ready")
+447:     except Exception as e:
+448:         print_error(f"Tracking DB init failed: {e}")
+449: 
+450:     async with bot:
+451:         for cog in COGS:
+452:             try:
+453:                 await bot.load_extension(cog)
+454:                 print_loaded(f"📦 {cog}")
+455:             except Exception as e:
+456:                 print_error(f"Failed to load {cog}: {e}")
+457: 
+458:         # Start channel monitor as a background task (runs alongside the bot).
+459:         # If the env var is missing, the monitor silently disables itself.
+460:         monitor_task = asyncio.create_task(start_monitor())
+461:         print_loaded("📡 channel monitor task queued")
+462: 
+463:         print()
+464:         print_info("Connecting to Discord...")
+465:         await bot.start(BOT_TOKEN)
+466: 
+467: 
+468: if __name__ == "__main__":
+469:     asyncio.run(main())
+470: 
+The above content shows the entire, complete file contents of the requested file.
+
+Created At: 2026-05-29T21:00:59Z
+Completed At: 2026-05-29T21:00:59Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 470
+Total Bytes: 16651
+Showing lines 1 to 470
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # ──────────────────────────────────────────────────────────────────
+2: # Personal Roblox Account Management Discord Bot
+3: # This bot provides the account owner with convenient Discord slash
+4: # commands to manage their own Roblox accounts. All operations use
+5: # official, documented Roblox API endpoints and are performed by
+6: # the account owner on their own accounts for personal use only.
+7: # ──────────────────────────────────────────────────────────────────
+8: 
+9: import os
+10: import sys
+11: import asyncio
+12: import ctypes.util
+13: import glob
+14: import time
+15: 
+16: import discord
+17: import discord.voice_state
+18: from discord.ext import commands
+19: from dotenv import load_dotenv
+20: from core.channel_monitor import start_monitor
+21: from core.command_control import is_command_disabled
+22: from core.logging import (
+23:     configure_webhook_emojis,
+24:     log_bot_stats,
+25:     log_guild_install,
+26:     log_guild_uninstall,
+27: )
+28: from core.tracking import init_db as init_tracking_db
+29: 
+30: # Force UTF-8 + unbuffered so emojis + ANSI colors work on Windows
+31: sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+32: sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
+33: 
+34: load_dotenv()
+35: 
+36: BOT_TOKEN = os.getenv("BOT_TOKEN")
+37: if not BOT_TOKEN:
+38:     print(
+39:         
+<truncated 15318 bytes>
+{e}")
+415: 
+416: 
+417: @bot.event
+418: async def on_guild_remove(guild: discord.Guild):
+419:     """Log when the bot is kicked/removed from a server."""
+420:     guild_name = getattr(guild, "name", None)
+421:     if (
+422:         _SUPPRESS_GUILD_REMOVE_LOGS
+423:         or getattr(guild, "unavailable", False)
+424:         or not guild_name
+425:         or guild_name == "?"
+426:     ):
+427:         print_info(f"Skipped guild remove log during disconnect/cache update: {getattr(guild, 'id', '?')}")
+428:         return
+429:     print(f"  {RED}[LEAVE]{RESET}   ➖ {guild.name}")
+430:     try:
+431:         log_guild_uninstall(guild)
+432:     except Exception as e:
+433:         print_error(f"Failed to log guild uninstall: {e}")
+434: 
+435: 
+436: async def main():
+437:     print_banner()
+438: 
+439:     disable_discord_voice_dave()
+440:     load_discord_opus()
+441:     patch_voice_recv_corrupt_opus()
+442: 
+443:     # Initialize the tracking SQLite DB (idempotent, creates schema if missing).
+444:     try:
+445:         init_tracking_db()
+446:         print_loaded("📦 tracking DB ready")
+447:     except Exception as e:
+448:         print_error(f"Tracking DB init failed: {e}")
+449: 
+450:     async with bot:
+451:         for cog in COGS:
+452:             try:
+453:                 await bot.load_extension(cog)
+454:                 print_loaded(f"📦 {cog}")
+455:             except Exception as e:
+456:                 print_error(f"Failed to load {cog}: {e}")
+457: 
+458:         # Start channel monitor as a background task (runs alongside the bot).
+459:         # If the env var is missing, the monitor silently disables itself.
+460:         monitor_task = asyncio.create_task(start_monitor())
+461:         print_loaded("📡 channel monitor task queued")
+462: 
+463:         print()
+464:         print_info("Connecting to Discord...")
+465:         await bot.start(BOT_TOKEN)
+466: 
+467: 
+468: if __name__ == "__main__":
+469:     asyncio.run(main())
+470: 
+The above content shows the entire, complete file contents of the requested file.
+
+Created At: 2026-05-29T21:11:22Z
+Completed At: 2026-05-29T21:11:22Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 448
+Total Bytes: 15956
+Showing lines 55 to 110
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+55: intents = discord.Intents.all()
+56: bot = commands.Bot(command_prefix=["!", "?"], intents=intents)
+57: 
+58: VOICE_CHANNEL_ID_RAW = os.getenv("BOT_VOICE_CHANNEL_ID", "1502369934473171177").strip()
+59: try:
+60:     AUTO_JOIN_VOICE_CHANNEL_ID = int(VOICE_CHANNEL_ID_RAW) if VOICE_CHANNEL_ID_RAW else 0
+61: except ValueError:
+62:     AUTO_JOIN_VOICE_CHANNEL_ID = 0
+63: VOICE_REJOIN_DELAY_SECONDS = 8
+64: VOICE_WATCHDOG_SECONDS = 60
+65: _VOICE_REJOIN_TASK: asyncio.Task | None = None
+66: _VOICE_WATCHDOG_TASK: asyncio.Task | None = None
+67: VOICE_AUTO_JOIN_PAUSED_UNTIL = 0.0
+68: VOICE_JOIN_FAILURES = 0
+69: MAX_VOICE_JOIN_FAILURES = 3
+70: VOICE_JOIN_FAILURE_PAUSE_DURATION = 15 * 60  # 15 minutes
+71: 
+72: 
+73: def voice_auto_join_paused() -> bool:
+74:     paused_until = max(
+75:         VOICE_AUTO_JOIN_PAUSED_UNTIL,
+76:         getattr(bot, "voice_auto_join_paused_until", 0.0)
+77:     )
+78:     return time.monotonic() < paused_until
+79: 
+80: 
+81: def disable_discord_voice_dave() -> None:
+82:     # discord.py enables DAVE when the davey package is installed. The bot still
+83:     # keeps davey installed, but voice receive cannot decode DAVE-encrypted RTP.
+84:     if hasattr(discord.voice_state.VoiceConnectionState, "max_dave_protocol_version"):
+85:         discord.voice_state.VoiceConnectionState.max_dave_protocol_version = property(lambda self: 0)
+86:         print_loaded("Discord voice DAVE disabled for receive compatibility")
+87:     else:
+88:         print_loaded("Discord voice DAVE is not present in this discord.py version")
+89: 
+90: 
+91: def load_discord_opus() -> None:
+92:     if discord.opus.is_loaded():
+93:         print_loaded("Voice Opus library already loaded")
+94:         return
+95: 
+96:     nix_opus_paths = sorted(
+97:         glob.glob("/nix/store/*libopus*/lib/libopus.so*"),
+98:         key=lambda path: (".so." not in path, path),
+99:     )
+100:     candidates = [
+101:         ctypes.util.find_library("opus"),
+102:         *nix_opus_paths,
+103:         "libopus.so.0",
+104:         "libopus.so",
+105:         "opus",
+106:     ]
+107:     errors: list[str] = []
+108:     for candidate in candidates:
+109:         if not candidate:
+110:             continue
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:11:27Z
+Completed At: 2026-05-29T21:11:28Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 448
+Total Bytes: 15956
+Showing lines 160 to 290
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+160:         await interaction.response.send_message(message)
+161:     return False
+162: 
+163: 
+164: bot.tree.interaction_check = disabled_command_check
+165: 
+166: # Discord can emit guild-remove/cache-clear style events while a Railway
+167: # redeploy is disconnecting the old process. Only log removals while the
+168: # gateway is fully connected and ready.
+169: _SUPPRESS_GUILD_REMOVE_LOGS = True
+170: 
+171: 
+172: def _voice_channel_user_count(channel: discord.abc.GuildChannel) -> int:
+173:     members = getattr(channel, "members", None) or []
+174:     return sum(1 for member in members if not getattr(member, "bot", False))
+175: 
+176: 
+177: def find_busiest_voice_channel() -> discord.VoiceChannel | discord.StageChannel | None:
+178:     configured_fallback = None
+179:     best_channel = None
+180:     best_count = 0
+181: 
+182:     for guild in bot.guilds:
+183:         me = guild.me
+184:         for channel in [*guild.voice_channels, *guild.stage_channels]:
+185:             if AUTO_JOIN_VOICE_CHANNEL_ID and channel.id == AUTO_JOIN_VOICE_CHANNEL_ID:
+186:                 configured_fallback = channel
+187:             if me is not None and not channel.permissions_for(me).connect:
+188:                 continue
+189:             user_count = _voice_channel_user_count(channel)
+190:             if user_count > best_count:
+191:                 best_channel = channel
+192:                 best_count = user_count
+193: 
+194:     return best_channel or configured_fallback
+195: 
+196: 
+197: async def join_configured_voice_channel() -> None:
+198:     if voice_auto_join_paused():
+199:         print_info
+<truncated 2329 bytes>
+_VOICE_REJOIN_TASK
+243:     if not bot.is_ready():
+244:         return
+245:     if voice_auto_join_paused():
+246:         print_info(f"Skipped voice rejoin schedule because auto-join is paused: {reason}")
+247:         return
+248:     if _VOICE_REJOIN_TASK and not _VOICE_REJOIN_TASK.done():
+249:         return
+250: 
+251:     async def _delayed_rejoin():
+252:         try:
+253:             print_info(f"Voice rejoin scheduled: {reason}")
+254:             await asyncio.sleep(delay)
+255:             await join_configured_voice_channel()
+256:         except asyncio.CancelledError:
+257:             raise
+258:         except Exception as e:
+259:             print_error(f"Voice rejoin task failed: {e}")
+260: 
+261:     _VOICE_REJOIN_TASK = asyncio.create_task(_delayed_rejoin())
+262: 
+263: 
+264: async def voice_watchdog_loop() -> None:
+265:     while not bot.is_closed():
+266:         try:
+267:             await asyncio.sleep(VOICE_WATCHDOG_SECONDS)
+268:             if not bot.is_ready() or voice_auto_join_paused() or getattr(bot, "is_connecting_voice", False):
+269:                 continue
+270:             if any(client and client.is_connected() for client in bot.voice_clients):
+271:                 continue
+272:             schedule_voice_rejoin("watchdog detected no voice connection", delay=0)
+273:         except asyncio.CancelledError:
+274:             raise
+275:         except Exception as e:
+276:             print_error(f"Voice watchdog failed: {e}")
+277: 
+278: # All command modules to load
+279: COGS = [
+280:     "commands.help_cmd",
+281:     "commands.userinfo_cmd",
+282:     "commands.feedback_cmd",
+283:     "commands.bancheck_cmd",
+284:     "commands.connections_cmd",
+285:     "commands.cheating_servers_cmd",
+286:     "commands.owner_tools_cmd",
+287:     "commands.account_status_cmd",
+288:     "commands.voice_record_cmd",
+289: ]
+290: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:11:46Z
+Completed At: 2026-05-29T21:11:46Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 448
+Total Bytes: 15956
+Showing lines 370 to 410
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+370: 
+371: @bot.event
+372: async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+373:     if not bot.user or member.id != bot.user.id:
+374:         return
+375:     # Ignore any events triggered during the manual connection process to avoid loop
+376:     if getattr(bot, "is_connecting_voice", False):
+377:         return
+378:     after_id = getattr(after.channel, "id", None)
+379:     if member.guild.id in getattr(bot, "recording_voice_guild_ids", set()):
+380:         return
+381:     if after_id is None:
+382:         schedule_voice_rejoin("bot disconnected from voice")
+383: 
+384: 
+385: @bot.event
+386: async def on_guild_join(guild: discord.Guild):
+387:     """Log when the bot is added to a new server."""
+388:     print(f"  {GREEN}[JOIN]{RESET}    ➕ {guild.name} ({guild.member_count or '?'} members)")
+389:     try:
+390:         log_guild_install(guild)
+391:     except Exception as e:
+392:         print_error(f"Failed to log guild install: {e}")
+393: 
+394: 
+395: @bot.event
+396: async def on_guild_remove(guild: discord.Guild):
+397:     """Log when the bot is kicked/removed from a server."""
+398:     guild_name = getattr(guild, "name", None)
+399:     if (
+400:         _SUPPRESS_GUILD_REMOVE_LOGS
+401:         or getattr(guild, "unavailable", False)
+402:         or not guild_name
+403:         or guild_name == "?"
+404:     ):
+405:         print_info(f"Skipped guild remove log during disconnect/cache update: {getattr(guild, 'id', '?')}")
+406:         return
+407:     print(f"  {RED}[LEAVE]{RESET}   ➖ {guild.name}")
+408:     try:
+409:         log_guild_uninstall(guild)
+410:     except Exception as e:
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:41:41Z
+Completed At: 2026-05-29T21:41:41Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 461
+Total Bytes: 16507
+Showing lines 195 to 240
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+195: 
+196: 
+197: async def join_configured_voice_channel() -> None:
+198:     if voice_auto_join_paused():
+199:         print_info("Skipped configured voice auto-join because it is temporarily paused")
+200:         return
+201: 
+202:     for existing in bot.voice_clients:
+203:         if existing and existing.is_connected():
+204:             print_loaded(f"Voice auto-join staying in {getattr(existing.channel, 'name', existing.channel)}")
+205:             return
+206: 
+207:     channel = find_busiest_voice_channel()
+208:     if channel is None:
+209:         print_info("Voice auto-join skipped: no accessible voice/stage channel found")
+210:         return
+211:     if channel.guild.id in getattr(bot, "recording_voice_guild_ids", set()):
+212:         print_info("Skipped configured voice auto-join because recording is active")
+213:         return
+214: 
+215:     global VOICE_JOIN_FAILURES, VOICE_AUTO_JOIN_PAUSED_UNTIL
+216:     bot.is_connecting_voice = True
+217:     try:
+218:         user_count = _voice_channel_user_count(channel)
+219:         print_info(f"Joining voice channel {channel.name} ({channel.id}) with {user_count} user(s)...")
+220:         import discord.ext.voice_recv as voice_recv
+221: 
+222:         await asyncio.wait_for(
+223:             channel.connect(cls=voice_recv.VoiceRecvClient, reconnect=True, timeout=20, self_deaf=False),
+224:             timeout=30,
+225:         )
+226:         print_success(f"Joined voice channel {channel.name}")
+227:         VOICE_JOIN_FAILURES = 0  # Reset counter on successful connection
+228:     except Exception as e:
+229:         VOICE_JOIN_FAILURES += 1
+230:         print_error(f"Voice auto-join failed for {channel.name} ({channel.id}): {e!r} (failure {VOICE_JOIN_FAILURES}/{MAX_VOICE_JOIN_FAILURES})")
+231:         if VOICE_JOIN_FAILURES >= MAX_VOICE_JOIN_FAILURES:
+232:             print_error(f"Too many consecutive voice join failures. Pausing voice auto-join for {VOICE_JOIN_FAILURE_PAUSE_DURATION // 60} minutes.")
+233:             VOICE_AUTO_JOIN_PAUSED_UNTIL = time.monotonic() + VOICE_JOIN_FAILURE_PAUSE_DURATION
+234:             VOICE_JOIN_FAILURES = 0  # Reset counter after setting pause
+235:     finally:
+236:         bot.is_connecting_voice = False
+237: 
+238: 
+239: def cancel_voice_rejoin() -> None:
+240:     """Cancel any pending voice rejoin task. Called by /record to prevent conflicts."""
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:45:32Z
+Completed At: 2026-05-29T21:45:32Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 490
+Total Bytes: 17677
+Showing lines 74 to 90
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+74:     paused_until = max(
+75:         VOICE_AUTO_JOIN_PAUSED_UNTIL,
+76:         getattr(bot, "voice_auto_join_paused_until", 0.0)
+77:     )
+78:     return time.monotonic() < paused_until
+79: 
+80: 
+81: def disable_discord_voice_dave() -> None:
+82:     # discord.py enables DAVE when the davey package is installed. The bot still
+83:     # keeps davey installed, but voice receive cannot decode DAVE-encrypted RTP.
+84:     if hasattr(discord.voice_state.VoiceConnectionState, "max_dave_protocol_version"):
+85:         discord.voice_state.VoiceConnectionState.max_dave_protocol_version = property(lambda self: 0)
+86:         print_loaded("Discord voice DAVE disabled for receive compatibility")
+87:     else:
+88:         print_loaded("Discord voice DAVE is not present in this discord.py version")
+89: 
+90: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:45:37Z
+Completed At: 2026-05-29T21:45:37Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 490
+Total Bytes: 17677
+Showing lines 450 to 465
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+450:     try:
+451:         log_guild_uninstall(guild)
+452:     except Exception as e:
+453:         print_error(f"Failed to log guild uninstall: {e}")
+454: 
+455: 
+456: async def main():
+457:     print_banner()
+458: 
+459:     disable_discord_voice_dave()
+460:     load_discord_opus()
+461:     patch_voice_recv_corrupt_opus()
+462: 
+463:     # Initialize the tracking SQLite DB (idempotent, creates schema if missing).
+464:     try:
+465:         init_tracking_db()
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:09:14Z
+Completed At: 2026-05-29T22:09:14Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 489
+Total Bytes: 17655
+Showing lines 190 to 260
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+190:                 best_channel = channel
+191:                 best_count = user_count
+192: 
+193:     return best_channel or configured_fallback
+194: 
+195: 
+196: async def join_configured_voice_channel() -> None:
+197:     if voice_auto_join_paused():
+198:         print_info("Skipped configured voice auto-join because it is temporarily paused")
+199:         return
+200: 
+201:     # Check for a live connection first
+202:     for existing in bot.voice_clients:
+203:         if existing and existing.is_connected():
+204:             print_loaded(f"Voice auto-join staying in {getattr(existing.channel, 'name', existing.channel)}")
+205:             return
+206: 
+207:     channel = find_busiest_voice_channel()
+208:     if channel is None:
+209:         print_info("Voice auto-join skipped: no accessible voice/stage channel found")
+210:         return
+211:     if channel.guild.id in getattr(bot, "recording_voice_guild_ids", set()):
+212:         print_info("Skipped configured voice auto-join because recording is active")
+213:         return
+214: 
+215:     global VOICE_JOIN_FAILURES, VOICE_AUTO_JOIN_PAUSED_UNTIL
+216:     bot.is_connecting_voice = True
+217:     try:
+218:         user_count = _voice_channel_user_count(channel)
+219:         print_info(f"Joining voice channel {channel.name} ({channel.id}) with {user_count} user(s)...")
+220: 
+221:         # Clean up any zombie/dead voice clients left over from previous failed connects.
+222:         # When channel.connect() times out, discord.py leaves a dead VoiceClient registered
+223:         # on the guild, which blocks all future connection attempt
+<truncated 16 bytes>
+existing_vc = channel.guild.voice_client
+225:         if existing_vc:
+226:             print_info(f"Cleaning up existing voice client (connected={existing_vc.is_connected()})...")
+227:             try:
+228:                 await existing_vc.disconnect(force=True)
+229:             except Exception as cleanup_err:
+230:                 print_error(f"Cleanup disconnect failed: {cleanup_err}")
+231:             # Also manually remove from internal state if still lingering
+232:             try:
+233:                 if existing_vc in bot.voice_clients:
+234:                     bot.voice_clients.remove(existing_vc)
+235:             except Exception:
+236:                 pass
+237:             await asyncio.sleep(1)
+238: 
+239:         import discord.ext.voice_recv as voice_recv
+240: 
+241:         await asyncio.wait_for(
+242:             channel.connect(cls=voice_recv.VoiceRecvClient, reconnect=True, timeout=20, self_deaf=False),
+243:             timeout=30,
+244:         )
+245:         print_success(f"Joined voice channel {channel.name}")
+246:         VOICE_JOIN_FAILURES = 0
+247:     except Exception as e:
+248:         VOICE_JOIN_FAILURES += 1
+249:         import traceback
+250:         print_error(f"Voice auto-join failed for {channel.name} ({channel.id}): {e!r} (failure {VOICE_JOIN_FAILURES}/{MAX_VOICE_JOIN_FAILURES})")
+251:         traceback.print_exc()
+252:         # Clean up zombie client left by the failed connect
+253:         zombie = channel.guild.voice_client
+254:         if zombie:
+255:             try:
+256:                 await zombie.disconnect(force=True)
+257:             except Exception:
+258:                 pass
+259:         if VOICE_JOIN_FAILURES >= MAX_VOICE_JOIN_FAILURES:
+260:             print_error(f"Too many consecutive voice join failures. Pausing voice auto-join for {VOICE_JOIN_FAILURE_PAUSE_DURATION // 60} minutes.")
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:09:26Z
+Completed At: 2026-05-29T22:09:26Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 487
+Total Bytes: 17570
+Showing lines 450 to 480
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+450:         print_error(f"Failed to log guild uninstall: {e}")
+451: 
+452: 
+453: async def main():
+454:     print_banner()
+455: 
+456:     disable_discord_voice_dave()  # logs DAVE status, no longer patches it
+457:     load_discord_opus()
+458:     patch_voice_recv_corrupt_opus()
+459: 
+460:     # Initialize the tracking SQLite DB (idempotent, creates schema if missing).
+461:     try:
+462:         init_tracking_db()
+463:         print_loaded("📦 tracking DB ready")
+464:     except Exception as e:
+465:         print_error(f"Tracking DB init failed: {e}")
+466: 
+467:     async with bot:
+468:         for cog in COGS:
+469:             try:
+470:                 await bot.load_extension(cog)
+471:                 print_loaded(f"📦 {cog}")
+472:             except Exception as e:
+473:                 print_error(f"Failed to load {cog}: {e}")
+474: 
+475:         # Start channel monitor as a background task (runs alongside the bot).
+476:         # If the env var is missing, the monitor silently disables itself.
+477:         monitor_task = asyncio.create_task(start_monitor())
+478:         print_loaded("📡 channel monitor task queued")
+479: 
+480:         print()
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:09:31Z
+Completed At: 2026-05-29T22:09:31Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 487
+Total Bytes: 17570
+Showing lines 70 to 140
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+70: VOICE_JOIN_FAILURE_PAUSE_DURATION = 15 * 60  # 15 minutes
+71: 
+72: 
+73: def voice_auto_join_paused() -> bool:
+74:     paused_until = max(
+75:         VOICE_AUTO_JOIN_PAUSED_UNTIL,
+76:         getattr(bot, "voice_auto_join_paused_until", 0.0)
+77:     )
+78:     return time.monotonic() < paused_until
+79: 
+80: 
+81: def disable_discord_voice_dave() -> None:
+82:     # Discord now REQUIRES DAVE (close code 4017 if disabled).
+83:     # The davey package is installed and discord.py 2.7.1 handles it natively.
+84:     # We no longer patch max_dave_protocol_version to 0 — doing so kills
+85:     # every voice connection attempt.
+86:     has_dave = hasattr(discord.voice_state.VoiceConnectionState, "max_dave_protocol_version")
+87:     print_loaded(f"Discord voice DAVE: {'available' if has_dave else 'not present'} — allowing negotiation")
+88: 
+89: 
+90: def load_discord_opus() -> None:
+91:     if discord.opus.is_loaded():
+92:         print_loaded("Voice Opus library already loaded")
+93:         return
+94: 
+95:     nix_opus_paths = sorted(
+96:         glob.glob("/nix/store/*libopus*/lib/libopus.so*"),
+97:         key=lambda path: (".so." not in path, path),
+98:     )
+99:     candidates = [
+100:         ctypes.util.find_library("opus"),
+101:         *nix_opus_paths,
+102:         "libopus.so.0",
+103:         "libopus.so",
+104:         "opus",
+105:     ]
+106:     errors: list[str] = []
+107:     for candidate in candidates:
+108:         if not candidate:
+109:             continue
+110:         try:
+111:             discord.opus.load_opus(candidate)
+112:             print_loaded(f"Voice Opus library loaded: {candidate}")
+113:             return
+114:         except Exception as e:
+115:             errors.append(f"{candidate}: {e}")
+116: 
+117:     print_error("Voice Opus library is not loaded; voice recording cannot decode audio.")
+118:     if errors:
+119:         print_error("Opus load attempts: " + " | ".join(errors))
+120: 
+121: 
+122: def patch_voice_recv_corrupt_opus() -> None:
+123:     try:
+124:         from discord.ext.voice_recv.router import PacketDecoder
+125:     except Exception as e:
+126:         print_error(f"Voice receive patch unavailable: {e}")
+127:         return
+128: 
+129:     if getattr(PacketDecoder, "_logs_bot_corrupt_opus_patch", False):
+130:         return
+131: 
+132:     original_decode_packet = PacketDecoder._decode_packet
+133: 
+134:     def _decode_packet_ignoring_corrupt(self, packet):
+135:         try:
+136:             return original_decode_packet(self, packet)
+137:         except discord.opus.OpusError as e:
+138:             skipped = getattr(self, "_logs_bot_corrupt_opus_skipped", 0) + 1
+139:             self._logs_bot_corrupt_opus_skipped = skipped
+140:             if skipped <= 3 or skipped % 100 == 0:
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:09:36Z
+Completed At: 2026-05-29T22:09:36Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/bot.py`
+Total Lines: 487
+Total Bytes: 17570
+Showing lines 135 to 165
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+135:         try:
+136:             return original_decode_packet(self, packet)
+137:         except discord.opus.OpusError as e:
+138:             skipped = getattr(self, "_logs_bot_corrupt_opus_skipped", 0) + 1
+139:             self._logs_bot_corrupt_opus_skipped = skipped
+140:             if skipped <= 3 or skipped % 100 == 0:
+141:                 print_error(f"Skipped corrupt Opus packet for ssrc {self.ssrc}: {e!r} (count={skipped})")
+142:             return packet, b""
+143: 
+144:     PacketDecoder._decode_packet = _decode_packet_ignoring_corrupt
+145:     PacketDecoder._logs_bot_corrupt_opus_patch = True
+146:     print_loaded("Voice receive corrupt Opus packet guard enabled")
+147: 
+148: 
+149: async def disabled_command_check(interaction: discord.Interaction) -> bool:
+150:     command = getattr(interaction, "command", None)
+151:     command_name = getattr(command, "qualified_name", None) or getattr(command, "name", "")
+152:     if not command_name or not is_command_disabled(command_name):
+153:         return True
+154: 
+155:     message = f"`/{command_name}` is disabled rn."
+156:     if interaction.response.is_done():
+157:         await interaction.followup.send(message)
+158:     else:
+159:         await interaction.response.send_message(message)
+160:     return False
+161: 
+162: 
+163: bot.tree.interaction_check = disabled_command_check
+164: 
+165: # Discord can emit guild-remove/cache-clear style events while a Railway
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+

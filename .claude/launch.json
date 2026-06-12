@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Site (Next.js dev)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\Users\\min\\Desktop\\Site", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

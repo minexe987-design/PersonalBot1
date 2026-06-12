@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(railway --version)",
+      "Bash(railway whoami *)",
+      "Bash(railway status *)",
+      "Bash(railway run *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('commands/bancheck_cmd.py', encoding='utf-8'\\).read\\(\\)\\); print\\('bancheck OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('core/logging.py', encoding='utf-8'\\).read\\(\\)\\); print\\('logging OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('commands/cheating_servers_cmd.py', encoding='utf-8'\\).read\\(\\)\\); print\\('cheating_servers_cmd OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('bot.py', encoding='utf-8'\\).read\\(\\)\\); print\\('bot.py OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('commands/help_cmd.py', encoding='utf-8'\\).read\\(\\)\\); print\\('help_cmd OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('commands/cheating_servers_cmd.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -X utf8 -c ' *)",
+      "PowerShell(python scripts/resolve_invites.py)"
+    ]
+  }
+}

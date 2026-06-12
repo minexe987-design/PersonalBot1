@@ -1,0 +1,640 @@
+Created At: 2026-05-29T21:00:55Z
+Completed At: 2026-05-29T21:00:55Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 288
+Total Bytes: 11820
+Showing lines 1 to 288
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import io
+2: import math
+3: import sys
+4: import threading
+5: import time
+6: import wave
+7: from dataclasses import dataclass
+8: from datetime import datetime, timezone
+9: 
+10: import discord
+11: from discord import app_commands
+12: from discord.ext import commands
+13: import discord.ext.voice_recv as voice_recv
+14: 
+15: 
+16: LOG_CHANNEL_ID = 1510006023140937928
+17: MAX_UPLOAD_BYTES = 7_750_000
+18: WAV_CHANNELS = 2
+19: WAV_SAMPLE_WIDTH = 2
+20: WAV_SAMPLE_RATE = 48_000
+21: 
+22: 
+23: class PerUserWavSink(voice_recv.AudioSink):
+24:     def __init__(self):
+25:         super().__init__()
+26:         self._lock = threading.Lock()
+27:         self._pcm_by_source: dict[str, bytearray] = {}
+28:         self._source_names: dict[str, str] = {}
+29:         self.packet_count = 0
+30:         self.pcm_byte_count = 0
+31:         self.unresolved_packet_count = 0
+32: 
+33:     def wants_opus(self) -> bool:
+34:         return False
+35: 
+36:     def write(self, user: discord.User | discord.Member | None, data: voice_recv.VoiceData) -> None:
+37:         if not data.pcm:
+38:             return
+39:         packet_ssrc = getattr(data.packet, "ssrc", None)
+40:         source = user or data.source
+41:         if source is not None:
+42:             source_key = str(source.id)
+43:             source_name = str(source)
+44:         elif packet_ssrc is not None:
+45:             source_key = f"ssrc_{packet_ssrc}"
+46:             source_name = f"unknown_ssrc_{packet_ssrc}"
+47:         else:
+48:             source_key = "unknown"
+49:             source_name = "unknown"
+50: 
+51:         with se
+<truncated 9599 bytes>
+   try:
+252:                     session.voice_client._connection.remove_socket_listener(session.raw_socket_callback)
+253:                 except Exception as e:
+254:                     print(f"[VOICE-RECORD] Failed to remove raw socket listener: {e}")
+255:             wavs = session.sink.build_wavs()
+256:             if session.voice_client.is_connected():
+257:                 await session.voice_client.disconnect(force=False)
+258: 
+259:             log_channel = await self._get_log_channel()
+260:             started = datetime.fromtimestamp(session.started_at, tz=timezone.utc).isoformat()
+261:             await log_channel.send(
+262:                 f"Voice recording stopped in `{interaction.guild.name}`. "
+263:                 f"Started by <@{session.started_by}> at `{started}`. "
+264:                 f"Speakers captured: `{len(wavs)}`. "
+265:                 f"Raw packets: `{session.raw_packet_count}`. "
+266:                 f"Raw bytes: `{session.raw_byte_count}`. "
+267:                 f"Packets: `{session.sink.packet_count}`. "
+268:                 f"PCM bytes: `{session.sink.pcm_byte_count}`. "
+269:                 f"Unresolved packets: `{session.sink.unresolved_packet_count}`."
+270:             )
+271: 
+272:             if not wavs:
+273:                 await interaction.followup.send("Recording stopped, but no speaker audio was captured.")
+274:                 return
+275: 
+276:             for source_key, (source_name, wav_data) in wavs.items():
+277:                 await self._send_wav(log_channel, source_key, source_name, session.started_at, wav_data)
+278: 
+279:             await interaction.followup.send(
+280:                 f"Recording stopped. Uploaded `{len(wavs)}` speaker file(s) to <#{LOG_CHANNEL_ID}>."
+281:             )
+282:         finally:
+283:             self._set_recording(interaction.guild.id, False)
+284: 
+285: 
+286: async def setup(bot: commands.Bot):
+287:     await bot.add_cog(VoiceRecordCog(bot))
+288: 
+The above content shows the entire, complete file contents of the requested file.
+
+Created At: 2026-05-29T21:00:55Z
+Completed At: 2026-05-29T21:00:55Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 288
+Total Bytes: 11820
+Showing lines 1 to 288
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import io
+2: import math
+3: import sys
+4: import threading
+5: import time
+6: import wave
+7: from dataclasses import dataclass
+8: from datetime import datetime, timezone
+9: 
+10: import discord
+11: from discord import app_commands
+12: from discord.ext import commands
+13: import discord.ext.voice_recv as voice_recv
+14: 
+15: 
+16: LOG_CHANNEL_ID = 1510006023140937928
+17: MAX_UPLOAD_BYTES = 7_750_000
+18: WAV_CHANNELS = 2
+19: WAV_SAMPLE_WIDTH = 2
+20: WAV_SAMPLE_RATE = 48_000
+21: 
+22: 
+23: class PerUserWavSink(voice_recv.AudioSink):
+24:     def __init__(self):
+25:         super().__init__()
+26:         self._lock = threading.Lock()
+27:         self._pcm_by_source: dict[str, bytearray] = {}
+28:         self._source_names: dict[str, str] = {}
+29:         self.packet_count = 0
+30:         self.pcm_byte_count = 0
+31:         self.unresolved_packet_count = 0
+32: 
+33:     def wants_opus(self) -> bool:
+34:         return False
+35: 
+36:     def write(self, user: discord.User | discord.Member | None, data: voice_recv.VoiceData) -> None:
+37:         if not data.pcm:
+38:             return
+39:         packet_ssrc = getattr(data.packet, "ssrc", None)
+40:         source = user or data.source
+41:         if source is not None:
+42:             source_key = str(source.id)
+43:             source_name = str(source)
+44:         elif packet_ssrc is not None:
+45:             source_key = f"ssrc_{packet_ssrc}"
+46:             source_name = f"unknown_ssrc_{packet_ssrc}"
+47:         else:
+48:             source_key = "unknown"
+49:             source_name = "unknown"
+50: 
+51:         with se
+<truncated 9599 bytes>
+   try:
+252:                     session.voice_client._connection.remove_socket_listener(session.raw_socket_callback)
+253:                 except Exception as e:
+254:                     print(f"[VOICE-RECORD] Failed to remove raw socket listener: {e}")
+255:             wavs = session.sink.build_wavs()
+256:             if session.voice_client.is_connected():
+257:                 await session.voice_client.disconnect(force=False)
+258: 
+259:             log_channel = await self._get_log_channel()
+260:             started = datetime.fromtimestamp(session.started_at, tz=timezone.utc).isoformat()
+261:             await log_channel.send(
+262:                 f"Voice recording stopped in `{interaction.guild.name}`. "
+263:                 f"Started by <@{session.started_by}> at `{started}`. "
+264:                 f"Speakers captured: `{len(wavs)}`. "
+265:                 f"Raw packets: `{session.raw_packet_count}`. "
+266:                 f"Raw bytes: `{session.raw_byte_count}`. "
+267:                 f"Packets: `{session.sink.packet_count}`. "
+268:                 f"PCM bytes: `{session.sink.pcm_byte_count}`. "
+269:                 f"Unresolved packets: `{session.sink.unresolved_packet_count}`."
+270:             )
+271: 
+272:             if not wavs:
+273:                 await interaction.followup.send("Recording stopped, but no speaker audio was captured.")
+274:                 return
+275: 
+276:             for source_key, (source_name, wav_data) in wavs.items():
+277:                 await self._send_wav(log_channel, source_key, source_name, session.started_at, wav_data)
+278: 
+279:             await interaction.followup.send(
+280:                 f"Recording stopped. Uploaded `{len(wavs)}` speaker file(s) to <#{LOG_CHANNEL_ID}>."
+281:             )
+282:         finally:
+283:             self._set_recording(interaction.guild.id, False)
+284: 
+285: 
+286: async def setup(bot: commands.Bot):
+287:     await bot.add_cog(VoiceRecordCog(bot))
+288: 
+The above content shows the entire, complete file contents of the requested file.
+
+Created At: 2026-05-29T21:11:33Z
+Completed At: 2026-05-29T21:11:33Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 292
+Total Bytes: 12074
+Showing lines 96 to 240
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+96: 
+97: 
+98: class VoiceRecordCog(commands.Cog):
+99:     def __init__(self, bot: commands.Bot):
+100:         self.bot = bot
+101:         self.sessions: dict[int, RecordingSession] = {}
+102:         if not hasattr(bot, "recording_voice_guild_ids"):
+103:             bot.recording_voice_guild_ids = set()
+104: 
+105:     def _set_recording(self, guild_id: int, value: bool) -> None:
+106:         recording_guilds = getattr(self.bot, "recording_voice_guild_ids", set())
+107:         if value:
+108:             recording_guilds.add(guild_id)
+109:             setattr(self.bot, "voice_auto_join_paused_until", time.monotonic() + 15 * 60)
+110:             main_module = sys.modules.get("__main__")
+111:             if main_module is not None and hasattr(main_module, "VOICE_AUTO_JOIN_PAUSED_UNTIL"):
+112:                 main_module.VOICE_AUTO_JOIN_PAUSED_UNTIL = time.monotonic() + 15 * 60
+113:         else:
+114:             recording_guilds.discard(guild_id)
+115:         self.bot.recording_voice_guild_ids = recording_guilds
+116: 
+117:     async def _require_admin(self, interaction: discord.Interaction) -> bool:
+118:         permissions = getattr(interaction.user, "guild_permissions", None)
+119:         if permissions is not None and permissions.administrator:
+120:             return True
+121: 
+122:         message = "Only server administrators can use voice recording commands."
+123:         if interaction.response.is_done():
+124:             await interaction.followup.send(message, ephemeral=True)
+125:         else:
+126:             await interaction.response.send_message(messa
+<truncated 4061 bytes>
+rted_at,
+206:                 channel_id=channel.id,
+207:             )
+208:             try:
+209:                 voice_client._connection.add_socket_listener(session.raw_socket_callback)
+210:                 session.raw_listener_attached = True
+211:             except Exception as e:
+212:                 print(f"[VOICE-RECORD] Failed to attach raw socket listener: {e}")
+213: 
+214:             def after(error: Exception | None) -> None:
+215:                 if error:
+216:                     print(f"[VOICE-RECORD] Audio reader stopped with error: {error!r}")
+217: 
+218:             voice_client.listen(sink, after=after)
+219:             print(
+220:                 "[VOICE-RECORD] Started "
+221:                 f"guild={interaction.guild.id} channel={channel.id} "
+222:                 f"vc={type(voice_client).__name__} listening={voice_client.is_listening()} "
+223:                 f"mode={getattr(voice_client, 'mode', None)} self_deaf={getattr(voice_client, 'self_deaf', None)}"
+224:             )
+225:             self.sessions[interaction.guild.id] = session
+226:         except Exception:
+227:             self._set_recording(interaction.guild.id, False)
+228:             await interaction.followup.send("Failed to join voice channel and start recording.")
+229:             raise
+230: 
+231:         await interaction.followup.send(
+232:             f"Recording started in **{channel.name}**. Run `/stoprecord` to stop and upload the WAV files."
+233:         )
+234: 
+235:     @app_commands.command(name="stoprecord", description="Stop the active voice recording and upload WAV files.")
+236:     @app_commands.default_permissions(administrator=True)
+237:     async def stoprecord(self, interaction: discord.Interaction):
+238:         if not await self._require_admin(interaction):
+239:             return
+240:         if interaction.guild is None:
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:12:46Z
+Completed At: 2026-05-29T21:12:46Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 311
+Total Bytes: 12876
+Showing lines 1 to 15
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import io
+2: import math
+3: import sys
+4: import threading
+5: import time
+6: import wave
+7: from dataclasses import dataclass
+8: from datetime import datetime, timezone
+9: 
+10: import discord
+11: from discord import app_commands
+12: from discord.ext import commands
+13: import discord.ext.voice_recv as voice_recv
+14: 
+15: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T21:42:11Z
+Completed At: 2026-05-29T21:42:11Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 312
+Total Bytes: 12891
+Showing lines 195 to 260
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+195:         self.bot.is_connecting_voice = True
+196: 
+197:         try:
+198:             # Disconnect any existing voice client in this guild first
+199:             existing = interaction.guild.voice_client
+200:             if existing:
+201:                 print(f"[VOICE-RECORD] Disconnecting existing voice client before recording...")
+202:                 try:
+203:                     await existing.disconnect(force=True)
+204:                 except Exception as e:
+205:                     print(f"[VOICE-RECORD] Error disconnecting existing client: {e}")
+206:                 # Give Discord a moment to process the disconnect
+207:                 await asyncio.sleep(1)
+208: 
+209:             # Now connect fresh with VoiceRecvClient
+210:             print(f"[VOICE-RECORD] Connecting to {channel.name} ({channel.id})...")
+211:             voice_client = await asyncio.wait_for(
+212:                 channel.connect(cls=voice_recv.VoiceRecvClient, reconnect=True, self_deaf=False),
+213:                 timeout=30,
+214:             )
+215: 
+216:             sink = PerUserWavSink()
+217:             started_at = int(time.time())
+218:             session = RecordingSession(
+219:                 voice_client=voice_client,
+220:                 sink=sink,
+221:                 started_by=interaction.user.id,
+222:                 started_at=started_at,
+223:                 channel_id=channel.id,
+224:             )
+225:             try:
+226:                 voice_client._connection.add_socket_listener(session.raw_socket_callback)
+227:                 session.raw_listener_attached = True
+228:             except Exception as e:
+229:                 print(f"[VOICE-RECORD] Failed to attach raw socket listener: {e}")
+230: 
+231:             def after(error: Exception | None) -> None:
+232:                 if error:
+233:                     print(f"[VOICE-RECORD] Audio reader stopped with error: {error!r}")
+234: 
+235:             voice_client.listen(sink, after=after)
+236:             print(
+237:                 "[VOICE-RECORD] Started "
+238:                 f"guild={interaction.guild.id} channel={channel.id} "
+239:                 f"vc={type(voice_client).__name__} listening={voice_client.is_listening()} "
+240:                 f"mode={getattr(voice_client, 'mode', None)} self_deaf={getattr(voice_client, 'self_deaf', None)}"
+241:             )
+242:             self.sessions[interaction.guild.id] = session
+243:         except Exception as e:
+244:             self._set_recording(interaction.guild.id, False)
+245:             print(f"[VOICE-RECORD] Failed to start recording: {e!r}")
+246:             await interaction.followup.send(f"Failed to join voice channel and start recording: {e}")
+247:             return
+248:         finally:
+249:             self.bot.is_connecting_voice = False
+250: 
+251:         await interaction.followup.send(
+252:             f"Recording started in **{channel.name}**. Run `/stoprecord` to stop and upload the WAV files."
+253:         )
+254: 
+255:     @app_commands.command(name="stoprecord", description="Stop the active voice recording and upload WAV files.")
+256:     @app_commands.default_permissions(administrator=True)
+257:     async def stoprecord(self, interaction: discord.Interaction):
+258:         if not await self._require_admin(interaction):
+259:             return
+260:         if interaction.guild is None:
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:09:51Z
+Completed At: 2026-05-29T22:09:51Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 327
+Total Bytes: 13514
+Showing lines 1 to 100
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import asyncio
+2: import io
+3: import math
+4: import sys
+5: import threading
+6: import time
+7: import wave
+8: from dataclasses import dataclass
+9: from datetime import datetime, timezone
+10: 
+11: import discord
+12: from discord import app_commands
+13: from discord.ext import commands
+14: import discord.ext.voice_recv as voice_recv
+15: 
+16: 
+17: LOG_CHANNEL_ID = 1510006023140937928
+18: MAX_UPLOAD_BYTES = 7_750_000
+19: WAV_CHANNELS = 2
+20: WAV_SAMPLE_WIDTH = 2
+21: WAV_SAMPLE_RATE = 48_000
+22: 
+23: 
+24: class PerUserWavSink(voice_recv.AudioSink):
+25:     def __init__(self):
+26:         super().__init__()
+27:         self._lock = threading.Lock()
+28:         self._pcm_by_source: dict[str, bytearray] = {}
+29:         self._source_names: dict[str, str] = {}
+30:         self.packet_count = 0
+31:         self.pcm_byte_count = 0
+32:         self.unresolved_packet_count = 0
+33: 
+34:     def wants_opus(self) -> bool:
+35:         return False
+36: 
+37:     def write(self, user: discord.User | discord.Member | None, data: voice_recv.VoiceData) -> None:
+38:         if not data.pcm:
+39:             return
+40:         packet_ssrc = getattr(data.packet, "ssrc", None)
+41:         source = user or data.source
+42:         if source is not None:
+43:             source_key = str(source.id)
+44:             source_name = str(source)
+45:         elif packet_ssrc is not None:
+46:             source_key = f"ssrc_{packet_ssrc}"
+47:             source_name = f"unknown_ssrc_{packet_ssrc}"
+48:         else:
+49:             source_key = "unknown"
+50:             source_name = "unknown"
+51: 
+52:         with self._lock:
+53:             self.packet_count += 1
+54:             self.pcm_byte_count += len(data.pcm)
+55:             if source is None:
+56:                 self.unresolved_packet_count += 1
+57:             self._source_names.setdefault(source_key, source_name)
+58:             self._pcm_by_source.setdefault(source_key, bytearray()).extend(data.pcm)
+59: 
+60:     def cleanup(self) -> None:
+61:         pass
+62: 
+63:     def build_wavs(self) -> dict[str, tuple[str, bytes]]:
+64:         with self._lock:
+65:             snapshots = {
+66:                 source_key: (self._source_names.get(source_key, source_key), bytes(pcm))
+67:                 for source_key, pcm in self._pcm_by_source.items()
+68:                 if pcm
+69:             }
+70: 
+71:         wavs: dict[str, tuple[str, bytes]] = {}
+72:         for source_key, (source_name, pcm) in snapshots.items():
+73:             out = io.BytesIO()
+74:             with wave.open(out, "wb") as wav:
+75:                 wav.setnchannels(WAV_CHANNELS)
+76:                 wav.setsampwidth(WAV_SAMPLE_WIDTH)
+77:                 wav.setframerate(WAV_SAMPLE_RATE)
+78:                 wav.writeframes(pcm)
+79:             wavs[source_key] = (source_name, out.getvalue())
+80:         return wavs
+81: 
+82: 
+83: @dataclass
+84: class RecordingSession:
+85:     voice_client: voice_recv.VoiceRecvClient
+86:     sink: PerUserWavSink
+87:     started_by: int
+88:     started_at: int
+89:     channel_id: int
+90:     raw_packet_count: int = 0
+91:     raw_byte_count: int = 0
+92:     raw_listener_attached: bool = False
+93: 
+94:     def raw_socket_callback(self, packet_data: bytes) -> None:
+95:         self.raw_packet_count += 1
+96:         self.raw_byte_count += len(packet_data)
+97: 
+98: 
+99: class VoiceRecordCog(commands.Cog):
+100:     def __init__(self, bot: commands.Bot):
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:09:56Z
+Completed At: 2026-05-29T22:09:56Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 327
+Total Bytes: 13514
+Showing lines 100 to 250
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+100:     def __init__(self, bot: commands.Bot):
+101:         self.bot = bot
+102:         self.sessions: dict[int, RecordingSession] = {}
+103:         if not hasattr(bot, "recording_voice_guild_ids"):
+104:             bot.recording_voice_guild_ids = set()
+105: 
+106:     def _set_recording(self, guild_id: int, value: bool) -> None:
+107:         recording_guilds = getattr(self.bot, "recording_voice_guild_ids", set())
+108:         if value:
+109:             recording_guilds.add(guild_id)
+110:             setattr(self.bot, "voice_auto_join_paused_until", time.monotonic() + 15 * 60)
+111:             main_module = sys.modules.get("__main__")
+112:             if main_module is not None and hasattr(main_module, "VOICE_AUTO_JOIN_PAUSED_UNTIL"):
+113:                 main_module.VOICE_AUTO_JOIN_PAUSED_UNTIL = time.monotonic() + 15 * 60
+114:         else:
+115:             recording_guilds.discard(guild_id)
+116:         self.bot.recording_voice_guild_ids = recording_guilds
+117: 
+118:     async def _require_admin(self, interaction: discord.Interaction) -> bool:
+119:         permissions = getattr(interaction.user, "guild_permissions", None)
+120:         if permissions is not None and permissions.administrator:
+121:             return True
+122: 
+123:         message = "Only server administrators can use voice recording commands."
+124:         if interaction.response.is_done():
+125:             await interaction.followup.send(message, ephemeral=True)
+126:         else:
+127:             await interaction.response.send_message(message, ephemeral=True)
+128:         return False
+12
+<truncated 4404 bytes>
+yncio.sleep(1)
+214: 
+215:             # Now connect fresh with VoiceRecvClient
+216:             print(f"[VOICE-RECORD] Connecting to {channel.name} ({channel.id})...")
+217:             voice_client = await asyncio.wait_for(
+218:                 channel.connect(cls=voice_recv.VoiceRecvClient, reconnect=True, self_deaf=False),
+219:                 timeout=30,
+220:             )
+221: 
+222:             sink = PerUserWavSink()
+223:             started_at = int(time.time())
+224:             session = RecordingSession(
+225:                 voice_client=voice_client,
+226:                 sink=sink,
+227:                 started_by=interaction.user.id,
+228:                 started_at=started_at,
+229:                 channel_id=channel.id,
+230:             )
+231:             try:
+232:                 voice_client._connection.add_socket_listener(session.raw_socket_callback)
+233:                 session.raw_listener_attached = True
+234:             except Exception as e:
+235:                 print(f"[VOICE-RECORD] Failed to attach raw socket listener: {e}")
+236: 
+237:             def after(error: Exception | None) -> None:
+238:                 if error:
+239:                     print(f"[VOICE-RECORD] Audio reader stopped with error: {error!r}")
+240: 
+241:             voice_client.listen(sink, after=after)
+242:             print(
+243:                 "[VOICE-RECORD] Started "
+244:                 f"guild={interaction.guild.id} channel={channel.id} "
+245:                 f"vc={type(voice_client).__name__} listening={voice_client.is_listening()} "
+246:                 f"mode={getattr(voice_client, 'mode', None)} self_deaf={getattr(voice_client, 'self_deaf', None)}"
+247:             )
+248:             self.sessions[interaction.guild.id] = session
+249:         except Exception as e:
+250:             self._set_recording(interaction.guild.id, False)
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+Created At: 2026-05-29T22:10:01Z
+Completed At: 2026-05-29T22:10:01Z
+File Path: `file:///c:/Users/min/Desktop/Projects/Logs%20Bot/commands/voice_record_cmd.py`
+Total Lines: 327
+Total Bytes: 13514
+Showing lines 250 to 327
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+250:             self._set_recording(interaction.guild.id, False)
+251:             import traceback
+252:             print(f"[VOICE-RECORD] Failed to start recording: {e!r}")
+253:             traceback.print_exc()
+254:             # Clean up zombie client
+255:             zombie = interaction.guild.voice_client
+256:             if zombie:
+257:                 try:
+258:                     await zombie.disconnect(force=True)
+259:                 except Exception:
+260:                     pass
+261:             await interaction.followup.send(f"Failed to join voice channel and start recording: {e}")
+262:             return
+263:         finally:
+264:             self.bot.is_connecting_voice = False
+265: 
+266:         await interaction.followup.send(
+267:             f"Recording started in **{channel.name}**. Run `/stoprecord` to stop and upload the WAV files."
+268:         )
+269: 
+270:     @app_commands.command(name="stoprecord", description="Stop the active voice recording and upload WAV files.")
+271:     @app_commands.default_permissions(administrator=True)
+272:     async def stoprecord(self, interaction: discord.Interaction):
+273:         if not await self._require_admin(interaction):
+274:             return
+275:         if interaction.guild is None:
+276:             await interaction.response.send_message("Use this in the server where recording is running.")
+277:             return
+278: 
+279:         session = self.sessions.pop(interaction.guild.id, None)
+280:         if session is None:
+281:             await interaction.response.send_message("No recording is
+<truncated 431 bytes>
+ket_callback)
+292:                 except Exception as e:
+293:                     print(f"[VOICE-RECORD] Failed to remove raw socket listener: {e}")
+294:             wavs = session.sink.build_wavs()
+295:             if session.voice_client.is_connected():
+296:                 await session.voice_client.disconnect(force=False)
+297: 
+298:             log_channel = await self._get_log_channel()
+299:             started = datetime.fromtimestamp(session.started_at, tz=timezone.utc).isoformat()
+300:             await log_channel.send(
+301:                 f"Voice recording stopped in `{interaction.guild.name}`. "
+302:                 f"Started by <@{session.started_by}> at `{started}`. "
+303:                 f"Speakers captured: `{len(wavs)}`. "
+304:                 f"Raw packets: `{session.raw_packet_count}`. "
+305:                 f"Raw bytes: `{session.raw_byte_count}`. "
+306:                 f"Packets: `{session.sink.packet_count}`. "
+307:                 f"PCM bytes: `{session.sink.pcm_byte_count}`. "
+308:                 f"Unresolved packets: `{session.sink.unresolved_packet_count}`."
+309:             )
+310: 
+311:             if not wavs:
+312:                 await interaction.followup.send("Recording stopped, but no speaker audio was captured.")
+313:                 return
+314: 
+315:             for source_key, (source_name, wav_data) in wavs.items():
+316:                 await self._send_wav(log_channel, source_key, source_name, session.started_at, wav_data)
+317: 
+318:             await interaction.followup.send(
+319:                 f"Recording stopped. Uploaded `{len(wavs)}` speaker file(s) to <#{LOG_CHANNEL_ID}>."
+320:             )
+321:         finally:
+322:             self._set_recording(interaction.guild.id, False)
+323: 
+324: 
+325: async def setup(bot: commands.Bot):
+326:     await bot.add_cog(VoiceRecordCog(bot))
+327: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
